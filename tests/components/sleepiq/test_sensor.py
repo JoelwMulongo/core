@@ -1,35 +1,92 @@
 """The tests for SleepIQ sensor platform."""
+from homeassistant.components.sensor import DOMAIN
 from homeassistant.const import ATTR_FRIENDLY_NAME, ATTR_ICON
 from homeassistant.helpers import entity_registry as er
 
+from tests.components.sleepiq.conftest import (
+    BED_NAME,
+    BED_NAME_LOWER,
+    SLEEPER_L_ID,
+    SLEEPER_L_NAME,
+    SLEEPER_L_NAME_LOWER,
+    SLEEPER_R_ID,
+    SLEEPER_R_NAME,
+    SLEEPER_R_NAME_LOWER,
+    setup_platform,
+)
 
-async def test_sensors(hass, setup_entry):
-    """Test the SleepIQ binary sensors for a bed with two sides."""
+
+async def test_sleepnumber_sensors(hass, mock_asyncsleepiq):
+    """Test the SleepIQ sleepnumber for a bed with two sides."""
+    entry = await setup_platform(hass, DOMAIN)
     entity_registry = er.async_get(hass)
 
-    state = hass.states.get("sensor.sleepnumber_ile_test1_sleepnumber")
+    state = hass.states.get(
+        f"sensor.sleepnumber_{BED_NAME_LOWER}_{SLEEPER_L_NAME_LOWER}_sleepnumber"
+    )
     assert state.state == "40"
     assert state.attributes.get(ATTR_ICON) == "mdi:bed"
     assert (
-        state.attributes.get(ATTR_FRIENDLY_NAME) == "SleepNumber ILE Test1 SleepNumber"
+        state.attributes.get(ATTR_FRIENDLY_NAME)
+        == f"SleepNumber {BED_NAME} {SLEEPER_L_NAME} SleepNumber"
     )
 
-    entry = entity_registry.async_get("sensor.sleepnumber_ile_test1_sleepnumber")
+    entry = entity_registry.async_get(
+        f"sensor.sleepnumber_{BED_NAME_LOWER}_{SLEEPER_L_NAME_LOWER}_sleepnumber"
+    )
     assert entry
-    assert entry.unique_id == "-31_Test1_sleep_number"
+    assert entry.unique_id == f"{SLEEPER_L_ID}_sleep_number"
 
-    # If account type is set, only a single bed account was created and there will
-    # not be a second entity
-    if setup_entry["account_type"]:
-        return
-
-    state = hass.states.get("sensor.sleepnumber_ile_test2_sleepnumber")
+    state = hass.states.get(
+        f"sensor.sleepnumber_{BED_NAME_LOWER}_{SLEEPER_R_NAME_LOWER}_sleepnumber"
+    )
     assert state.state == "80"
     assert state.attributes.get(ATTR_ICON) == "mdi:bed"
     assert (
-        state.attributes.get(ATTR_FRIENDLY_NAME) == "SleepNumber ILE Test2 SleepNumber"
+        state.attributes.get(ATTR_FRIENDLY_NAME)
+        == f"SleepNumber {BED_NAME} {SLEEPER_R_NAME} SleepNumber"
     )
 
-    entry = entity_registry.async_get("sensor.sleepnumber_ile_test2_sleepnumber")
+    entry = entity_registry.async_get(
+        f"sensor.sleepnumber_{BED_NAME_LOWER}_{SLEEPER_R_NAME_LOWER}_sleepnumber"
+    )
     assert entry
-    assert entry.unique_id == "-31_Test2_sleep_number"
+    assert entry.unique_id == f"{SLEEPER_R_ID}_sleep_number"
+
+
+async def test_pressure_sensors(hass, mock_asyncsleepiq):
+    """Test the SleepIQ pressure for a bed with two sides."""
+    entry = await setup_platform(hass, DOMAIN)
+    entity_registry = er.async_get(hass)
+
+    state = hass.states.get(
+        f"sensor.sleepnumber_{BED_NAME_LOWER}_{SLEEPER_L_NAME_LOWER}_pressure"
+    )
+    assert state.state == "1000"
+    assert state.attributes.get(ATTR_ICON) == "mdi:bed"
+    assert (
+        state.attributes.get(ATTR_FRIENDLY_NAME)
+        == f"SleepNumber {BED_NAME} {SLEEPER_L_NAME} Pressure"
+    )
+
+    entry = entity_registry.async_get(
+        f"sensor.sleepnumber_{BED_NAME_LOWER}_{SLEEPER_L_NAME_LOWER}_pressure"
+    )
+    assert entry
+    assert entry.unique_id == f"{SLEEPER_L_ID}_pressure"
+
+    state = hass.states.get(
+        f"sensor.sleepnumber_{BED_NAME_LOWER}_{SLEEPER_R_NAME_LOWER}_pressure"
+    )
+    assert state.state == "1400"
+    assert state.attributes.get(ATTR_ICON) == "mdi:bed"
+    assert (
+        state.attributes.get(ATTR_FRIENDLY_NAME)
+        == f"SleepNumber {BED_NAME} {SLEEPER_R_NAME} Pressure"
+    )
+
+    entry = entity_registry.async_get(
+        f"sensor.sleepnumber_{BED_NAME_LOWER}_{SLEEPER_R_NAME_LOWER}_pressure"
+    )
+    assert entry
+    assert entry.unique_id == f"{SLEEPER_R_ID}_pressure"

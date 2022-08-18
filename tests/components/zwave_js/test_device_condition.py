@@ -45,6 +45,7 @@ async def test_get_conditions(hass, client, lock_schlage_be469, integration) -> 
             "domain": DOMAIN,
             "type": "node_status",
             "device_id": device.id,
+            "metadata": {},
         },
         {
             "condition": "device",
@@ -53,12 +54,14 @@ async def test_get_conditions(hass, client, lock_schlage_be469, integration) -> 
             "device_id": device.id,
             "value_id": value_id,
             "subtype": f"{config_value.property_} ({name})",
+            "metadata": {},
         },
         {
             "condition": "device",
             "domain": DOMAIN,
             "type": "value",
             "device_id": device.id,
+            "metadata": {},
         },
     ]
     conditions = await async_get_device_automations(
@@ -214,17 +217,6 @@ async def test_node_status_state(
     await hass.async_block_till_done()
     assert len(calls) == 4
     assert calls[3].data["some"] == "dead - event - test_event4"
-
-    event = Event(
-        "unknown",
-        data={
-            "source": "node",
-            "event": "unknown",
-            "nodeId": lock_schlage_be469.node_id,
-        },
-    )
-    lock_schlage_be469.receive_event(event)
-    await hass.async_block_till_done()
 
 
 async def test_config_parameter_state(
