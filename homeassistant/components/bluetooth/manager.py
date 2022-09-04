@@ -144,7 +144,7 @@ class BluetoothManager:
         ] = []
         self._history: dict[str, BluetoothServiceInfoBleak] = {}
         self._connectable_history: dict[str, BluetoothServiceInfoBleak] = {}
-        self._scanners: list[BaseHaScanner] = []
+        self._non_connectable_scanners: list[BaseHaScanner] = []
         self._connectable_scanners: list[BaseHaScanner] = []
         self._adapters: dict[str, AdapterDetails] = {}
 
@@ -153,13 +153,19 @@ class BluetoothManager:
         """Return if passive scan is supported."""
         return any(adapter[ADAPTER_PASSIVE_SCAN] for adapter in self._adapters.values())
 
+    def async_scanner_count(self, connectable: bool = True) -> int:
+        """Return the number of scanners."""
+        if connectable:
+            return len(self._connectable_scanners)
+        return len(self._connectable_scanners) + len(self._non_connectable_scanners)
+
     async def async_diagnostics(self) -> dict[str, Any]:
         """Diagnostics for the manager."""
         scanner_diagnostics = await asyncio.gather(
             *[
                 scanner.async_diagnostics()
                 for scanner in itertools.chain(
-                    self._scanners, self._connectable_scanners
+                    self._non_connectable_scanners, self._connectable_scanners
                 )
             ]
         )
@@ -215,10 +221,14 @@ class BluetoothManager:
     @hass_callback
     def async_all_discovered_devices(self, connectable: bool) -> Iterable[BLEDevice]:
         """Return all of discovered devices from all the scanners including duplicates."""
-        return itertools.chain.from_iterable(
-            scanner.discovered_devices
-            for scanner in self._get_scanners_by_type(connectable)
+        yield from itertools.chain.from_iterable(
+            scanner.discovered_devices for scanner in self._get_scanners_by_type(True)
         )
+        if not connectable:
+            yield from itertools.chain.from_iterable(
+                scanner.discovered_devices
+                for scanner in self._get_scanners_by_type(False)
+            )
 
     @hass_callback
     def async_discovered_devices(self, connectable: bool) -> list[BLEDevice]:
@@ -408,7 +418,11 @@ class BluetoothManager:
 
     def _get_scanners_by_type(self, connectable: bool) -> list[BaseHaScanner]:
         """Return the scanners by type."""
-        return self._connectable_scanners if connectable else self._scanners
+        return (
+            self._connectable_scanners
+            if connectable
+            else self._non_connectable_scanners
+        )
 
     def _get_unavailable_callbacks_by_type(
         self, connectable: bool
